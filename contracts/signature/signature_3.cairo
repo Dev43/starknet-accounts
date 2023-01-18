@@ -36,11 +36,11 @@ func _is_valid_eth_signature{
     // ACTION ITEM 1: format the signature and msg_hash so it can be verified vi `verify_eth_signature_uint256`
     // - reference: https://github.com/starkware-libs/cairo-lang/blob/master/src/starkware/cairo/common/cairo_secp/signature.cairo
     //
-    let sig_v: felt = // CODE HERE
-    let sig_r: Uint256 = // CODE HERE
-    let sig_s: Uint256 = // CODE HERE
-    let (high, low) = // CODE HERE
-    let msg_hash: Uint256 = // CODE HERE
+    let sig_v: felt = signature[0];// CODE HERE
+    let sig_r: Uint256 = Uint256(signature[1], signature[2]);// CODE HERE
+    let sig_s: Uint256 = Uint256(signature[3], signature[4]);// CODE HERE
+    let (high, low) = split_felt(hash);
+    let msg_hash: Uint256 = Uint256(low, high);
 
     let (local keccak_ptr: felt*) = alloc();
 
