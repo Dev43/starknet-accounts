@@ -213,9 +213,20 @@ func submit_tx{
     alloc_locals;
     _require_owner();
 
-    // CODE HERE
+    let (caller) = get_caller_address();
+    let (tx_info) = get_tx_info();
+    IAccount.is_valid_signature(
+        caller, tx_info.transaction_hash, tx_info.signature_len, tx_info.signature
+    );
 
-    submit.emit(caller, tx_index);
+    // CODE HERE
+    let (index) = curr_tx_index.read();
+    transactions.write(index, Transaction(contract_address=contract_address,function_selector=function_selector,calldata_len=calldata_len));
+    _spread_calldata(tx_index=index, calldata_index=0, calldata_len=calldata_len, calldata=calldata);
+
+
+    curr_tx_index.write(index + 1);
+    submit.emit(caller, index);
     return ();
 }
 
@@ -229,7 +240,33 @@ func confirm_tx{
     alloc_locals;
     _require_owner();
 
+
+    let (caller) = get_caller_address();
+    let (tx_info) = get_tx_info();
     // CODE HERE
+    let (tx: Transaction) = transactions.read(tx_index);
+    assert_not_zero(tx.contract_address);
+
+    let (num_confirmations) = tx_confirms.read(tx_index);
+    let (executed) = tx_is_executed.read(tx_index);
+
+    with_attr error_message("tx already executed") { 
+        assert executed = FALSE;
+    }
+
+
+    IAccount.is_valid_signature(
+        caller, tx_info.transaction_hash, tx_info.signature_len, tx_info.signature
+    );
+
+    let (confirmed) = has_confirmed.read(tx_index, caller);
+    with_attr error_message("tx already confirmed") { 
+        assert confirmed = FALSE;
+    }
+
+    tx_confirms.write(tx_index, num_confirmations + 1);
+    has_confirmed.write(tx_index, caller, TRUE);
+
 
     confirm.emit(caller, tx_index);
     return ();
@@ -247,10 +284,13 @@ func execute{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
 
     let (num_confirmations) = tx_confirms.read(tx_index);
     let (exec) = tx_is_executed.read(tx_index);
-    assert exec = FALSE;
+
+    with_attr error_message("tx already executed") { 
+        assert exec = FALSE;
+    }
 
     let (owners_len) = num_owners.read();
-    with_attr error_message("need more confirmations") {
+    with_attr error_message("not enough conf") {
         assert_le(owners_len - 1, num_confirmations);
     }
 

@@ -146,6 +146,19 @@ async def main():
     nonce = await client.get_contract_nonce(sig1_addr)
 
     # CODE HERE
+    call_data=[multi_addr, execute_selector, 1, eventData[1]]
+    hash = invoke_tx_hash(sig1_addr, call_data, nonce)
+    exec_signature = sign(hash, private_key)
+    
+    invoke = InvokeFunction(
+      calldata=call_data,
+      signature=[*exec_signature],
+      max_fee=data['MAX_FEE'],
+      version=1,
+      nonce=nonce,
+      contract_address=sig1_addr,
+    )
+
 
     resp = await sig1.send_transaction(invoke)
     await print_n_wait(client, resp)
