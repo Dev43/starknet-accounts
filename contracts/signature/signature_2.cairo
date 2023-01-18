@@ -28,8 +28,10 @@ func _is_valid_signature{
     syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr, ecdsa_ptr: SignatureBuiltin*
 }(hash: felt, signature_len: felt, signature: felt*) -> () {
     let (_public_key) = public_key.read();
-
+    let sig_r = signature[0];
+    let sig_s = signature[1];
     // CODE HERE
+    verify_ecdsa_signature(message=hash, public_key=_public_key, signature_r=sig_r, signature_s=sig_s);
 
     return ();
 }
